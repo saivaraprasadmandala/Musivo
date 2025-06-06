@@ -342,17 +342,17 @@ export default function RoomPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
-      <div className="container mx-auto px-4 py-6">
+    <div className="min-h-screen text-white dark:text-black">
+      <div className="container mx-auto px-4 py-6 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 rounded-lg shadow-lg">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={handleEndSession} className="text-red-500 hover:text-red-600 hover:bg-red-50">
               {isHost ? <Crown className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
             </Button>
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold">Room {roomId}</h1>
+                <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Room {roomId}</h1>
                 <ConnectionStatus isConnected={isConnected} />
               </div>
               <p className="text-gray-600 dark:text-gray-300">
@@ -361,11 +361,11 @@ export default function RoomPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={copyRoomCode}>
+            <Button variant="outline" onClick={copyRoomCode} className="text-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-700">
               <Copy className="h-4 w-4 mr-2" />
               Copy Code
             </Button>
-            <Button variant="destructive" onClick={handleEndSession}>
+            <Button variant="destructive" onClick={handleEndSession} className="bg-transparent !important">
               {isHost ? "End Session" : "Leave Session"}
             </Button>
           </div>
@@ -376,7 +376,7 @@ export default function RoomPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Now Playing Section */}
             {roomState.currentSong && (
-              <Card className="border-2 border-green-200 dark:border-green-700">
+              <Card className="border-2 hover:border-green-200 dark:hover:border-green-700 transition-colors">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Volume2 className="h-5 w-5 text-green-600" />
@@ -477,10 +477,10 @@ export default function RoomPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-gray-500">{song.duration}</span>
-                            <Button size="sm" variant="ghost" onClick={() => openInSpotify(song.spotifyUrl!)}>
+                            <Button size="sm" variant="outline" onClick={() => openInSpotify(song.spotifyUrl!)} className="text-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-700">
                               <ExternalLink className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" onClick={() => handleAddSong(song)}>
+                            <Button size="sm" onClick={() => handleAddSong(song)} className="bg-purple-600 hover:bg-purple-700 text-white">
                               <Plus className="h-4 w-4" />
                             </Button>
                           </div>
@@ -521,7 +521,7 @@ export default function RoomPage() {
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-sm text-gray-500">{song.duration}</span>
-                        <Button size="sm" variant="ghost" onClick={() => openInSpotify(song.spotifyUrl!)}>
+                        <Button size="sm" variant="outline" onClick={() => openInSpotify(song.spotifyUrl!)} className="text-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-700">
                           <ExternalLink className="h-4 w-4" />
                         </Button>
                         <Button
