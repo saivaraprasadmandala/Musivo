@@ -1,189 +1,91 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Music, Users, Headphones, CheckCircle, AlertCircle } from "lucide-react"
-import { getSpotifyAuthUrl } from "@/lib/spotify"
-import { useSpotifyAuth } from "@/hooks/use-spotify-auth"
-import { useToast } from "@/hooks/use-toast"
-import { SetupInstructions } from "@/components/setup-instructions" 
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Music, Users, Headphones, Mic2, Share2, ListMusic, Key, Vote, LogIn, Speaker } from "lucide-react"
 
 export default function HomePage() {
   const router = useRouter()
-  const [roomCode, setRoomCode] = useState("")
-  const [hostName, setHostName] = useState("")
-  const [joinName, setJoinName] = useState("")
-  const { isAuthenticated, saveTokens, clearTokens } = useSpotifyAuth()
-  const { toast } = useToast()
-
-  useEffect(() => {
-    // Check for errors in URL
-    const urlParams = new URLSearchParams(window.location.search)
-    const error = urlParams.get("error")
-    const details = urlParams.get("details")
-
-    if (error) {
-      if (error === "spotify_auth_failed" || error === "token_failed") {
-        // Clear any invalid tokens
-        clearTokens()
-        toast({
-          title: "Spotify Setup Required",
-          description: "Please check the setup instructions below",
-          variant: "destructive",
-        })
-      } else {
-        toast({
-          title: "Authentication Error",
-          description: details || "Failed to connect to Spotify",
-          variant: "destructive",
-        })
-      }
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname)
-    }
-
-    // Check if user just connected Spotify
-    if (urlParams.get("spotify_connected")) {
-      toast({
-        title: "Spotify Connected!",
-        description: "You can now create rooms with music playback.",
-      })
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname)
-    }
-  }, [toast])
-
-  const handleHostRoom = () => {
-    if (hostName.trim()) {
-      if (!isAuthenticated) {
-        try {
-          // Redirect to Spotify auth
-          window.location.href = getSpotifyAuthUrl()
-        } catch (error) {
-          toast({
-            title: "Setup Required",
-            description: "Please check the Spotify setup instructions",
-            variant: "destructive",
-          })
-        }
-        return
-      }
-
-      const newRoomCode = Math.random().toString(36).substring(2, 8).toUpperCase()
-      router.push(`/room/${newRoomCode}?host=true&name=${encodeURIComponent(hostName)}&spotify=true`)
-    }
-  }
-
-  const handleJoinRoom = () => {
-    if (roomCode.trim() && joinName.trim()) {
-      router.push(`/room/${roomCode.toUpperCase()}?name=${encodeURIComponent(joinName)}`)
-    }
-  }
 
   return (
-    <div className="min-h-screen text-white dark:text-black">
-      <div className="container mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <div className="flex justify-center mb-4">
-            <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-full">
-              <Music className="h-8 w-8 text-purple-600 dark:text-purple-400" />
-            </div>
+    <div className="min-h-screen text-white dark:text-black flex flex-col justify-center items-center p-4">
+      <div className="container mx-auto px-4 py-16 text-center">
+        <div className="flex justify-center mb-4">
+          <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-full">
+            <Music className="h-8 w-8 text-purple-600 dark:text-purple-400" />
           </div>
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-gray-800 to-blue-700 text-transparent bg-clip-text dark:from-gray-100 dark:to-blue-500 mb-4">Share Music, Together</h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Your new favorite way to experience music with friends. Sync up, vote on tracks, and keep the party going, together!
-          </p>
         </div>
-
-        {/* {showSetupInstructions && (
-          <div className="mb-8">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <AlertCircle className="h-5 w-5 text-orange-500" />
-              <span className="text-orange-700 dark:text-orange-300 font-medium">Spotify Setup Required</span>
-            </div>
-            <SetupInstructions />
-          </div>
-        )} */}
+        <h1 className="text-5xl font-bold bg-gradient-to-r from-gray-800 to-blue-700 text-transparent bg-clip-text dark:from-gray-100 dark:to-blue-500 mb-4">Music Isn't Solo Anymore</h1>
+        <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-12">
+        No more playlist wars—just simple, smart sharing powered by your group's collective rhythm
+        </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {/* Host Room Card */}
-          <Card className="border-2 hover:border-purple-200 dark:hover:border-purple-700 transition-colors">
+          <Card className="border-2 hover:border-purple-200 dark:hover:border-purple-700 transition-all duration-300 hover:scale-[1.02] p-6 flex flex-col justify-between group">
             <CardHeader className="text-center">
-              <div className="flex justify-center mb-2">
-                <Headphones className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              <div className="flex justify-center mb-2 transition-transform duration-300 group-hover:-translate-y-1">
+                <Speaker className="h-6 w-6 text-purple-600 dark:text-purple-400 transition-colors duration-300 group-hover:text-purple-300" />
               </div>
-              <CardTitle className="text-2xl">Host a Room</CardTitle>
-              <CardDescription>Create a new music room and invite friends to join</CardDescription>
+              <CardTitle className="text-2xl mb-4 transition-colors duration-300 group-hover:text-purple-300">Host</CardTitle>
+              <CardDescription className="text-lg font-medium text-purple-600 dark:text-purple-400 transition-colors duration-300 group-hover:text-purple-300">Take charge of the playlist and manage the vibe</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="host-name">Your Name</Label>
-                <Input
-                  id="host-name"
-                  placeholder="Enter your name"
-                  value={hostName}
-                  onChange={(e) => setHostName(e.target.value)}
-                />
+            <div className="text-left space-y-6 mb-6">
+              <div className="flex items-center space-x-3">
+                <Music className="h-5 w-5 text-purple-600 dark:text-purple-400 flex-shrink-0 transition-transform duration-300 group-hover:scale-110" />
+                <p className="text-gray-600 dark:text-gray-300 transition-all duration-300 group-hover:text-purple-300 group-hover:translate-x-1 group-hover:scale-[1.01]">Start a music room for your event.</p>
               </div>
+              <div className="flex items-center space-x-3">
+                <Share2 className="h-5 w-5 text-purple-600 dark:text-purple-400 flex-shrink-0 transition-transform duration-300 group-hover:scale-110" />
+                <p className="text-gray-600 dark:text-gray-300 transition-all duration-300 group-hover:text-purple-300 group-hover:translate-x-1 group-hover:scale-[1.01]">Share your room code and bring everyone in.</p>
+              </div>
+              <div className="flex items-center space-x-3">
+                <ListMusic className="h-5 w-5 text-purple-600 dark:text-purple-400 flex-shrink-0 transition-transform duration-300 group-hover:scale-110" />
+                <p className="text-gray-600 dark:text-gray-300 transition-all duration-300 group-hover:text-purple-300 group-hover:translate-x-1 group-hover:scale-[1.01]">View, add, and prioritize audience songs.</p>
+              </div>
+            </div>
+            <div className="mt-auto">
               <Button
-                onClick={handleHostRoom}
+                onClick={() => router.push("/host/create")}
                 className="w-full bg-purple-600 hover:bg-purple-700"
-                disabled={!hostName.trim()}
               >
-                {isAuthenticated ? "Create Room" : "Connect Spotify & Create Room"}
+                Create Room
               </Button>
-              {isAuthenticated ? (
-                <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                  <CheckCircle className="h-4 w-4" />
-                  Spotify Connected (Premium required for full playback)
-                </div>
-              ) : (
-                <div className="text-xs text-gray-500 mt-2">Spotify Premium required for full song playback</div>
-              )}
-            </CardContent>
+            </div>
           </Card>
 
           {/* Join Room Card */}
-          <Card className="border-2 hover:border-blue-200 dark:hover:border-blue-700 transition-colors">
+          <Card className="border-2 hover:border-blue-200 dark:hover:border-blue-700 transition-all duration-300 hover:scale-[1.02] p-6 flex flex-col justify-between group">
             <CardHeader className="text-center">
-              <div className="flex justify-center mb-2">
-                <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <div className="flex justify-center mb-2 transition-transform duration-300 group-hover:-translate-y-1">
+                <Headphones className="h-6 w-6 text-blue-600 dark:text-blue-400 transition-colors duration-300 group-hover:text-blue-300" />
               </div>
-              <CardTitle className="text-2xl">Join a Room</CardTitle>
-              <CardDescription>Enter a room code to join an existing music session</CardDescription>
+              <CardTitle className="text-2xl mb-4 transition-colors duration-300 group-hover:text-blue-300">Participant</CardTitle>
+              <CardDescription className="text-lg font-medium text-blue-600 dark:text-blue-400 transition-colors duration-300 group-hover:text-blue-300">Join the vibe, vote the tracks, and jam together</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="room-code">Room Code</Label>
-                <Input
-                  id="room-code"
-                  placeholder="Enter room code"
-                  value={roomCode}
-                  onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                  className="uppercase"
-                />
+            <div className="text-left space-y-6 mb-6">
+              <div className="flex items-center space-x-3">
+                <LogIn className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 transition-transform duration-300 group-hover:scale-110" />
+                <p className="text-gray-600 dark:text-gray-300 transition-all duration-300 group-hover:text-blue-300 group-hover:translate-x-1 group-hover:scale-[1.01]">Enter the room code provided by the host.</p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="join-name">Your Name</Label>
-                <Input
-                  id="join-name"
-                  placeholder="Enter your name"
-                  value={joinName}
-                  onChange={(e) => setJoinName(e.target.value)}
-                />
+              <div className="flex items-center space-x-3">
+                <Music className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 transition-transform duration-300 group-hover:scale-110" />
+                <p className="text-gray-600 dark:text-gray-300 transition-all duration-300 group-hover:text-blue-300 group-hover:translate-x-1 group-hover:scale-[1.01]">Add your favorite songs or vote for bangers.</p>
               </div>
+              <div className="flex items-center space-x-3">
+                <Vote className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 transition-transform duration-300 group-hover:scale-110" />
+                <p className="text-gray-600 dark:text-gray-300 transition-all duration-300 group-hover:text-blue-300 group-hover:translate-x-1 group-hover:scale-[1.01]">Help shape the playlist with your votes</p>
+              </div>
+            </div>
+            <div className="mt-auto">
               <Button
-                onClick={handleJoinRoom}
+                onClick={() => router.push("/participant/join")}
                 className="w-full bg-blue-600 hover:bg-blue-700"
-                disabled={!roomCode.trim() || !joinName.trim()}
               >
                 Join Room
               </Button>
-            </CardContent>
+            </div>
           </Card>
         </div>
 
@@ -211,12 +113,6 @@ export default function HomePage() {
             <p className="text-gray-600 dark:text-gray-300">All changes sync instantly across all connected devices</p>
           </div>
         </div>
-
-        {/* <div className="mt-8 text-center">
-          <Button variant="outline" onClick={() => setShowSetupInstructions(!showSetupInstructions)}>
-            {showSetupInstructions ? "Hide" : "Show"} Setup Instructions
-          </Button>
-        </div> */}
       </div>
     </div>
   )
