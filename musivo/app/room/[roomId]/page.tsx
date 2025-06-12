@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef, useMemo } from "react"
-import { useParams, useSearchParams, useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Music,
   Users,
@@ -23,25 +23,26 @@ import {
   ExternalLink,
   VolumeX,
   AlertTriangle,
-} from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-import { formatDuration, type SpotifyTrack } from "@/lib/spotify"
-import { useWebSocket } from "@/hooks/use-websocket"
-import { useSpotifyAuth } from "@/hooks/use-spotify-auth"
-import type { Song } from "@/lib/websocket"
-import { ConnectionStatus } from "@/components/connection-status"
-import { RoomStats } from "@/components/room-stats"
-import { SpotifyWebPlayer } from "@/components/spotify-web-player"
+  Heart,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { formatDuration, type SpotifyTrack } from "@/lib/spotify";
+import { useWebSocket } from "@/hooks/use-websocket";
+import { useSpotifyAuth } from "@/hooks/use-spotify-auth";
+import type { Song } from "@/lib/websocket";
+import { ConnectionStatus } from "@/components/connection-status";
+import { RoomStats } from "@/components/room-stats";
+import { SpotifyWebPlayer } from "@/components/spotify-web-player";
 
 export default function RoomPage() {
-  const params = useParams()
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const { toast } = useToast()
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { toast } = useToast();
 
-  const roomId = params.roomId as string
-  const userName = searchParams.get("name") || ""
-  const isHostParam = searchParams.get("host") === "true"
+  const roomId = params.roomId as string;
+  const userName = searchParams.get("name") || "";
+  const isHostParam = searchParams.get("host") === "true";
 
   const {
     isConnected,
@@ -58,25 +59,38 @@ export default function RoomPage() {
     clearQueue,
     endRoom,
     leaveRoom,
-  } = useWebSocket()
+  } = useWebSocket();
 
-  const { isAuthenticated, getValidAccessToken, tokens, isLoading } = useSpotifyAuth()
+  const { isAuthenticated, getValidAccessToken, tokens, isLoading } =
+    useSpotifyAuth();
 
-  const [searchQuery, setSearchQuery] = useState("")
-  const [searchResults, setSearchResults] = useState<Song[]>([])
-  const [isSearching, setIsSearching] = useState(false)
-  const [hasJoinedRoom, setHasJoinedRoom] = useState(false)
-  const [isPremium, setIsPremium] = useState(false)
-  const [roomWasEstablished, setRoomWasEstablished] = useState(false)
-  const joinAttempted = useRef(false)
-  const lastSongId = useRef<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Song[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [hasJoinedRoom, setHasJoinedRoom] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
+  const [roomWasEstablished, setRoomWasEstablished] = useState(false);
+  const joinAttempted = useRef(false);
+  const lastSongId = useRef<string | null>(null);
+
+  // Sort the queue by votes in descending order, then by addedAt for tie-breaking
+  const sortedQueue = useMemo(() => {
+    if (!roomState?.queue) return [];
+    return [...roomState.queue].sort((a, b) => {
+      if (b.votes !== a.votes) {
+        return b.votes - a.votes; // Sort by votes (descending)
+      }
+      // For tie-breaking, sort by addedAt (earlier added songs come first)
+      return new Date(a.addedAt).getTime() - new Date(b.addedAt).getTime();
+    });
+  }, [roomState?.queue]);
 
   // Track when room is successfully established
   useEffect(() => {
     if (roomState && hasJoinedRoom && !roomWasEstablished) {
-      setRoomWasEstablished(true)
+      setRoomWasEstablished(true);
     }
-  }, [roomState, hasJoinedRoom, roomWasEstablished])
+  }, [roomState, hasJoinedRoom, roomWasEstablished]);
 
   // Check if user is authenticated, if not redirect to home (but wait for loading to complete)
   useEffect(() => {
@@ -85,62 +99,80 @@ export default function RoomPage() {
         title: "Authentication Required",
         description: "Please connect your Spotify account to host a room",
         variant: "destructive",
-      })
-      router.push("/")
-      return
+      });
+      router.push("/");
+      return;
     }
-  }, [isAuthenticated, isLoading, router, toast, isHostParam])
+  }, [isAuthenticated, isLoading, router, toast, isHostParam]);
 
   // Check if user has Premium
   useEffect(() => {
     const checkPremium = async () => {
-      if (!isAuthenticated || !tokens) return
+      if (!isAuthenticated || !tokens) return;
 
       try {
-        const accessToken = await getValidAccessToken()
-        if (!accessToken) return
+        const accessToken = await getValidAccessToken();
+        if (!accessToken) return;
 
         const response = await fetch("https://api.spotify.com/v1/me", {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
-        })
+        });
 
         if (response.ok) {
-          const userData = await response.json()
-          setIsPremium(userData.product === "premium")
+          const userData = await response.json();
+          setIsPremium(userData.product === "premium");
 
           // Log premium status for debugging
-          console.log("Spotify Premium status:", userData.product === "premium" ? "Premium" : "Free")
+          console.log(
+            "Spotify Premium status:",
+            userData.product === "premium" ? "Premium" : "Free"
+          );
         }
       } catch (error) {
-        console.error("Error checking Premium status:", error)
+        console.error("Error checking Premium status:", error);
       }
-    }
+    };
 
-    checkPremium()
-  }, [isAuthenticated, tokens, getValidAccessToken])
+    checkPremium();
+  }, [isAuthenticated, tokens, getValidAccessToken]);
 
   // Join room only once when connected
   useEffect(() => {
-    if (isConnected && !hasJoinedRoom && userName && !joinAttempted.current && (!isHostParam || isAuthenticated)) {
-      joinAttempted.current = true
+    if (
+      isConnected &&
+      !hasJoinedRoom &&
+      userName &&
+      !joinAttempted.current &&
+      (!isHostParam || isAuthenticated)
+    ) {
+      joinAttempted.current = true;
 
       if (isHostParam) {
-        createRoom(userName, roomId)
+        createRoom(userName, roomId);
       } else {
-        joinRoom(userName, roomId)
+        joinRoom(userName, roomId);
       }
-      setHasJoinedRoom(true)
+      setHasJoinedRoom(true);
     }
-  }, [isConnected, hasJoinedRoom, userName, roomId, isHostParam, createRoom, joinRoom, isAuthenticated])
+  }, [
+    isConnected,
+    hasJoinedRoom,
+    userName,
+    roomId,
+    isHostParam,
+    createRoom,
+    joinRoom,
+    isAuthenticated,
+  ]);
 
   // Handle song changes
   useEffect(() => {
     if (roomState?.currentSong?.id !== lastSongId.current) {
-      lastSongId.current = roomState?.currentSong?.id || null
+      lastSongId.current = roomState?.currentSong?.id || null;
     }
-  }, [roomState?.currentSong?.id])
+  }, [roomState?.currentSong?.id]);
 
   // Redirect to home when room ends or is no longer available
   useEffect(() => {
@@ -150,60 +182,64 @@ export default function RoomPage() {
         // Double-check that we're still in the same state after a brief delay
         if (roomWasEstablished && isConnected && !roomState) {
           toast({
-            title: "Room Unavailable", 
+            title: "Room Unavailable",
             description: "This room is no longer available",
             variant: "destructive",
-          })
-          router.push("/")
+          });
+          router.push("/");
         }
-      }, 1000) // Wait 1 second to avoid race conditions
+      }, 1000); // Wait 1 second to avoid race conditions
 
-      return () => clearTimeout(timeoutId)
+      return () => clearTimeout(timeoutId);
     }
-  }, [roomWasEstablished, isConnected, roomState, router, toast])
+  }, [roomWasEstablished, isConnected, roomState, router, toast]);
 
   const handleSearch = async (query: string) => {
-    setSearchQuery(query)
+    setSearchQuery(query);
     if (query.trim()) {
-      setIsSearching(true)
+      setIsSearching(true);
       try {
-        const accessToken = await getValidAccessToken()
+        const accessToken = await getValidAccessToken();
 
         const response = await fetch(
-          `/api/spotify/search?q=${encodeURIComponent(query)}${accessToken ? `&access_token=${accessToken}` : ""}`,
-        )
-        const data = await response.json()
+          `/api/spotify/search?q=${encodeURIComponent(query)}${
+            accessToken ? `&access_token=${accessToken}` : ""
+          }`
+        );
+        const data = await response.json();
 
         if (data.tracks) {
-          const formattedTracks: Song[] = data.tracks.map((track: SpotifyTrack) => ({
-            id: track.id,
-            title: track.name,
-            artist: track.artists.map((a) => a.name).join(", "),
-            duration: formatDuration(track.duration_ms),
-            votes: 0,
-            addedBy: "",
-            votedBy: [],
-            spotifyUrl: track.external_urls.spotify,
-            previewUrl: track.preview_url,
-            imageUrl: track.album.images[0]?.url,
-            addedAt: new Date().toISOString(),
-          }))
-          setSearchResults(formattedTracks)
+          const formattedTracks: Song[] = data.tracks.map(
+            (track: SpotifyTrack) => ({
+              id: track.id,
+              title: track.name,
+              artist: track.artists.map((a) => a.name).join(", "),
+              duration: formatDuration(track.duration_ms),
+              votes: 0,
+              addedBy: "",
+              votedBy: [],
+              spotifyUrl: track.external_urls.spotify,
+              previewUrl: track.preview_url,
+              imageUrl: track.album.images[0]?.url,
+              addedAt: new Date().toISOString(),
+            })
+          );
+          setSearchResults(formattedTracks);
         }
       } catch (error) {
-        console.error("Search failed:", error)
+        console.error("Search failed:", error);
         toast({
           title: "Search failed",
           description: "Could not search for songs. Please try again.",
           variant: "destructive",
-        })
+        });
       } finally {
-        setIsSearching(false)
+        setIsSearching(false);
       }
     } else {
-      setSearchResults([])
+      setSearchResults([]);
     }
-  }
+  };
 
   const handleAddSong = (song: Song) => {
     addSong({
@@ -213,60 +249,64 @@ export default function RoomPage() {
       spotifyUrl: song.spotifyUrl,
       previewUrl: song.previewUrl,
       imageUrl: song.imageUrl,
-    })
-    setSearchResults([])
-    setSearchQuery("")
-  }
+    });
+    setSearchResults([]);
+    setSearchQuery("");
+  };
 
   const handleVoteSong = (songId: string) => {
     if (!hasVoted(songId)) {
-      voteSong(songId)
+      voteSong(songId);
     }
-  }
+  };
 
   const copyRoomCode = () => {
-    navigator.clipboard.writeText(roomId)
+    navigator.clipboard.writeText(roomId);
     toast({
       title: "Room code copied!",
       description: "Share this code with friends to invite them.",
-    })
-  }
+    });
+  };
 
   const openInSpotify = (spotifyUrl: string) => {
-    window.open(spotifyUrl, "_blank")
-  }
+    window.open(spotifyUrl, "_blank");
+  };
 
   const handleEndSession = () => {
     if (isHost) {
-      if (confirm("Are you sure you want to end this session? This will permanently close the room for all participants.")) {
-        endRoom()
-        router.push("/")
+      if (
+        confirm(
+          "Are you sure you want to end this session? This will permanently close the room for all participants."
+        )
+      ) {
+        endRoom();
+        router.push("/");
         setTimeout(() => {
-          window.location.reload()
-        }, 500)
+          window.location.reload();
+        }, 500);
       }
     } else {
       if (confirm("Are you sure you want to leave this session?")) {
-        leaveRoom()
-        router.push("/")
+        leaveRoom();
+        router.push("/");
         setTimeout(() => {
-          window.location.reload()
-        }, 500)
+          window.location.reload();
+        }, 500);
       }
     }
-  }
+  };
 
   // Convert Spotify URL to URI for Web Playback SDK
   const getSpotifyUri = (spotifyUrl: string) => {
-    const trackId = spotifyUrl.split("/track/")[1]?.split("?")[0]
-    return trackId ? `spotify:track:${trackId}` : undefined
-  }
+    const trackId = spotifyUrl.split("/track/")[1]?.split("?")[0];
+    return trackId ? `spotify:track:${trackId}` : undefined;
+  };
 
   // Get current track URI
   const currentTrackUri = useMemo(() => {
-    if (!roomState?.currentSong?.spotifyUrl) return undefined
-    return getSpotifyUri(roomState.currentSong.spotifyUrl)
-  }, [roomState?.currentSong?.spotifyUrl])
+    if (!roomState?.currentSong?.spotifyUrl) return undefined;
+    return getSpotifyUri(roomState.currentSong.spotifyUrl);
+  }, [roomState?.currentSong?.spotifyUrl]);
 
   // Show loading while authentication state is being determined
   if (isLoading) {
@@ -278,11 +318,13 @@ export default function RoomPage() {
             <CardTitle>Loading...</CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-gray-600 dark:text-gray-300">Checking authentication...</p>
+            <p className="text-gray-600 dark:text-gray-300">
+              Checking authentication...
+            </p>
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   // Redirect if not authenticated (only after loading is complete)
@@ -302,7 +344,7 @@ export default function RoomPage() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   if (connectionError) {
@@ -314,12 +356,14 @@ export default function RoomPage() {
             <CardTitle>Connection Failed</CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-gray-600 dark:text-gray-300 mb-4">Could not connect to the music room server.</p>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
+              Could not connect to the music room server.
+            </p>
             <Button onClick={() => router.push("/")}>Go Back</Button>
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   if (!isConnected || !roomState) {
@@ -331,14 +375,20 @@ export default function RoomPage() {
             <CardTitle>Connecting to Room</CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-gray-600 dark:text-gray-300">{isHostParam ? "Creating room..." : "Joining room..."}</p>
-            <Button className="mt-4" variant="outline" onClick={() => router.push("/")}>
+            <p className="text-gray-600 dark:text-gray-300">
+              {isHostParam ? "Creating room..." : "Joining room..."}
+            </p>
+            <Button
+              className="mt-4"
+              variant="outline"
+              onClick={() => router.push("/")}
+            >
               Cancel
             </Button>
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -347,25 +397,41 @@ export default function RoomPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={handleEndSession} className="text-red-500 hover:text-red-600 hover:bg-red-50">
-              {isHost ? <Crown className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleEndSession}
+              className="text-red-500 hover:text-red-600 hover:bg-red-50"
+            >
+              {isHost ? (
+                <Crown className="h-4 w-4" />
+              ) : (
+                <ArrowLeft className="h-4 w-4" />
+              )}
             </Button>
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Room {roomId}</h1>
+                <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+                  Room {roomId}
+                </h1>
                 <ConnectionStatus isConnected={isConnected} />
               </div>
               <p className="text-gray-600 dark:text-gray-300">
-                {roomState.users.length} {roomState.users.length === 1 ? "person" : "people"} in room
+                {roomState.users.length}{" "}
+                {roomState.users.length === 1 ? "person" : "people"} in room
               </p>
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={copyRoomCode} className="text-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-700">
+            <Button
+              variant="outline"
+              onClick={copyRoomCode}
+              className="text-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+            >
               <Copy className="h-4 w-4 mr-2" />
               Copy Code
             </Button>
-            <Button variant="destructive" onClick={handleEndSession} className="bg-transparent !important">
+            <Button variant="destructive" onClick={handleEndSession}>
               {isHost ? "End Session" : "Leave Session"}
             </Button>
           </div>
@@ -388,15 +454,23 @@ export default function RoomPage() {
                     <div className="flex items-center gap-3">
                       {roomState.currentSong.imageUrl && (
                         <img
-                          src={roomState.currentSong.imageUrl || "/placeholder.svg"}
+                          src={
+                            roomState.currentSong.imageUrl || "/placeholder.svg"
+                          }
                           alt={roomState.currentSong.title}
                           className="w-16 h-16 rounded"
                         />
                       )}
                       <div>
-                        <h3 className="font-semibold text-lg">{roomState.currentSong.title}</h3>
-                        <p className="text-gray-600 dark:text-gray-300">{roomState.currentSong.artist}</p>
-                        <p className="text-sm text-gray-500">Added by {roomState.currentSong.addedBy}</p>
+                        <h3 className="font-semibold text-lg">
+                          {roomState.currentSong.title}
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-300">
+                          {roomState.currentSong.artist}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Added by {roomState.currentSong.addedBy}
+                        </p>
                         {!isPremium && !isHost && (
                           <p className="text-xs text-orange-500 mt-1">
                             <VolumeX className="h-3 w-3 inline mr-1" />
@@ -406,12 +480,18 @@ export default function RoomPage() {
                       </div>
                     </div>
                     <div className="text-right flex flex-col items-end gap-2">
-                      <Badge variant="secondary">{roomState.currentSong.votes} votes</Badge>
-                      <p className="text-sm text-gray-500">{roomState.currentSong.duration}</p>
+                      <Badge variant="secondary">
+                        {roomState.currentSong.votes} votes
+                      </Badge>
+                      <p className="text-sm text-gray-500">
+                        {roomState.currentSong.duration}
+                      </p>
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => openInSpotify(roomState.currentSong!.spotifyUrl!)}
+                        onClick={() =>
+                          openInSpotify(roomState.currentSong!.spotifyUrl!)
+                        }
                       >
                         <ExternalLink className="h-4 w-4 mr-1" />
                         Open in Spotify
@@ -461,7 +541,10 @@ export default function RoomPage() {
                   {searchResults.length > 0 && (
                     <div className="space-y-2">
                       {searchResults.map((song) => (
-                        <div key={song.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div
+                          key={song.id}
+                          className="flex items-center justify-between p-3 border rounded-lg"
+                        >
                           <div className="flex items-center gap-3">
                             {song.imageUrl && (
                               <img
@@ -472,15 +555,28 @@ export default function RoomPage() {
                             )}
                             <div>
                               <h4 className="font-medium">{song.title}</h4>
-                              <p className="text-sm text-gray-600 dark:text-gray-300">{song.artist}</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-300">
+                                {song.artist}
+                              </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-500">{song.duration}</span>
-                            <Button size="sm" variant="outline" onClick={() => openInSpotify(song.spotifyUrl!)} className="text-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-700">
+                            <span className="text-sm text-gray-500">
+                              {song.duration}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openInSpotify(song.spotifyUrl!)}
+                              className="text-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+                            >
                               <ExternalLink className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" onClick={() => handleAddSong(song)} className="bg-purple-600 hover:bg-purple-700 text-white">
+                            <Button
+                              size="sm"
+                              onClick={() => handleAddSong(song)}
+                              className="bg-purple-600 hover:bg-purple-700 text-white"
+                            >
                               <Plus className="h-4 w-4" />
                             </Button>
                           </div>
@@ -497,15 +593,20 @@ export default function RoomPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Music className="h-5 w-5" />
-                  Up Next ({roomState.queue.length} songs)
+                  Up Next ({sortedQueue.length} songs)
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {roomState.queue.map((song, index) => (
-                    <div key={song.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  {sortedQueue.map((song, index) => (
+                    <div
+                      key={song.id}
+                      className="group flex items-center justify-between p-3 border rounded-lg shadow-sm transition-all duration-300 ease-in-out transform hover:scale-[1.02] hover:shadow-md"
+                    >
                       <div className="flex items-center gap-3">
-                        <div className="text-sm font-medium text-gray-500 w-6">#{index + 1}</div>
+                        <div className="text-sm font-medium text-gray-500 w-6">
+                          #{index + 1}
+                        </div>
                         {song.imageUrl && (
                           <img
                             src={song.imageUrl || "/placeholder.svg"}
@@ -515,28 +616,54 @@ export default function RoomPage() {
                         )}
                         <div>
                           <h4 className="font-medium">{song.title}</h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-300">{song.artist}</p>
-                          <p className="text-xs text-gray-500">Added by {song.addedBy}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            {song.artist}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Added by {song.addedBy}
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-sm text-gray-500">{song.duration}</span>
-                        <Button size="sm" variant="outline" onClick={() => openInSpotify(song.spotifyUrl!)} className="text-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-700">
+                        <span className="text-sm text-gray-500">
+                          {song.duration}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openInSpotify(song.spotifyUrl!)}
+                          className="text-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+                        >
                           <ExternalLink className="h-4 w-4" />
                         </Button>
                         <Button
                           size="sm"
-                          variant={hasVoted(song.id) ? "secondary" : "outline"}
+                          variant="ghost"
                           onClick={() => handleVoteSong(song.id)}
                           disabled={hasVoted(song.id)}
+                          className=""
                         >
-                          <ChevronUp className="h-4 w-4 mr-1" />
-                          {song.votes}
+                          <Heart
+                            className={`h-4 w-4 mr-1 transition-colors duration-200 ${
+                              hasVoted(song.id)
+                                ? "fill-[#FF2C2C] text-[#FF2C2C]"
+                                : "text-gray-400 group-hover:text-red-500"
+                            }`}
+                          />
+                          <span
+                            className={`font-semibold transition-colors duration-200 ${
+                              hasVoted(song.id)
+                                ? "text-[#FF2C2C]"
+                                : "text-gray-500 group-hover:text-red-600"
+                            }`}
+                          >
+                            {song.votes}
+                          </span>
                         </Button>
                       </div>
                     </div>
                   ))}
-                  {roomState.queue.length === 0 && (
+                  {sortedQueue.length === 0 && (
                     <div className="text-center py-8 text-gray-500">
                       No songs in queue. Add some music to get started!
                     </div>
@@ -561,13 +688,19 @@ export default function RoomPage() {
                   {roomState.users.map((user) => (
                     <div key={user.id} className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                        <AvatarFallback>
+                          {user.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
                         <p className="font-medium">{user.name}</p>
-                        {user.id === currentUser?.id && <p className="text-xs text-gray-500">You</p>}
+                        {user.id === currentUser?.id && (
+                          <p className="text-xs text-gray-500">You</p>
+                        )}
                       </div>
-                      {user.isHost && <Crown className="h-4 w-4 text-yellow-500" />}
+                      {user.isHost && (
+                        <Crown className="h-4 w-4 text-yellow-500" />
+                      )}
                     </div>
                   ))}
                 </div>
@@ -584,11 +717,19 @@ export default function RoomPage() {
                   <CardTitle>Host Controls</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Button className="w-full" variant="outline" onClick={skipSong}>
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    onClick={skipSong}
+                  >
                     <Play className="h-4 w-4 mr-2" />
                     Skip Current Song
                   </Button>
-                  <Button className="w-full" variant="outline" onClick={clearQueue}>
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    onClick={clearQueue}
+                  >
                     Clear Queue
                   </Button>
                 </CardContent>
@@ -598,5 +739,5 @@ export default function RoomPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
