@@ -37,13 +37,8 @@ export default function SpotifySuccessPage() {
           }
         } catch (error) {
           console.error("Router push failed, using window.location:", error)
-          window.location.href = "/?spotify_connected=true"
+          router.push("/host/create?spotify_connected=true")
         }
-        
-        // Backup redirect after additional delay
-        setTimeout(() => {
-          window.location.href = "/?spotify_connected=true"
-        }, 1000)
       }, 2000)
     } else {
       // Use window.location for error redirect too
