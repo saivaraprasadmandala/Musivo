@@ -17,13 +17,18 @@ export default function SpotifySuccessPage() {
     const expiresIn = searchParams.get("expires_in")
     const hostName = searchParams.get("host_name")
 
+    console.log("SpotifySuccessPage: useEffect triggered.")
+    console.log("URL Params:", { accessToken: !!accessToken, refreshToken: !!refreshToken, expiresIn, hostName })
+
     if (accessToken && refreshToken && expiresIn) {
+      console.log("SpotifySuccessPage: Calling saveTokens.")
       // Save tokens using the hook
       saveTokens({
         access_token: accessToken,
         refresh_token: refreshToken,
         expires_in: Number.parseInt(expiresIn),
       })
+      console.log("SpotifySuccessPage: saveTokens called. Preparing redirect.")
 
       // Construct the redirect URL for the create room page
       const redirectPath = "/host/create"
@@ -33,14 +38,16 @@ export default function SpotifySuccessPage() {
         newUrl.searchParams.set("host_name", hostName)
       }
 
+      console.log("SpotifySuccessPage: Redirecting to:", newUrl.toString())
       // Redirect immediately
       try {
         router.push(newUrl.toString())
       } catch (error) {
-        console.error("Router push failed, using window.location:", error)
+        console.error("SpotifySuccessPage: Router push failed, using window.location:", error)
         window.location.href = newUrl.toString()
       }
     } else {
+      console.log("SpotifySuccessPage: Missing tokens, redirecting to error.")
       // Use window.location for error redirect too
       window.location.href = "/?error=missing_tokens"
     }

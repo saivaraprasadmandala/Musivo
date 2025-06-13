@@ -35,17 +35,25 @@ export function useSpotifyAuth() {
   }, [])
 
   const saveTokens = (tokenData: { access_token: string; refresh_token: string; expires_in: number }) => {
+    console.log("useSpotifyAuth: saveTokens called with tokenData:", tokenData)
     const expiresAt = Date.now() + tokenData.expires_in * 1000
+    console.log("useSpotifyAuth: calculated expiresAt:", expiresAt)
 
-    localStorage.setItem("spotify_access_token", tokenData.access_token)
-    localStorage.setItem("spotify_refresh_token", tokenData.refresh_token)
-    localStorage.setItem("spotify_token_expiry", expiresAt.toString())
+    try {
+      localStorage.setItem("spotify_access_token", tokenData.access_token)
+      localStorage.setItem("spotify_refresh_token", tokenData.refresh_token)
+      localStorage.setItem("spotify_token_expiry", expiresAt.toString())
+      console.log("useSpotifyAuth: Tokens saved to localStorage.")
+    } catch (e) {
+      console.error("useSpotifyAuth: Error saving tokens to localStorage:", e)
+    }
 
     setTokens({
       access_token: tokenData.access_token,
       refresh_token: tokenData.refresh_token,
       expires_at: expiresAt,
     })
+    console.log("useSpotifyAuth: setTokens called.")
   }
 
   const refreshTokens = async () => {
