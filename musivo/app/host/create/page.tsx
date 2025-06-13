@@ -22,6 +22,8 @@ export default function HostRoomPage() {
     const urlParams = new URLSearchParams(window.location.search)
     const error = urlParams.get("error")
     const details = urlParams.get("details")
+    const spotifyConnected = urlParams.get("spotify_connected")
+    const returnedHostName = urlParams.get("host_name")
 
     if (error) {
       if (error === "spotify_auth_failed" || error === "token_failed") {
@@ -44,34 +46,32 @@ export default function HostRoomPage() {
     }
 
     // Check if user just connected Spotify
-    if (urlParams.get("spotify_connected")) {
+    if (spotifyConnected) {
       toast({
         title: "Spotify Connected!",
         description: "You can now create rooms with music playback.",
       })
-      // Attempt to create room immediately after Spotify connection if hostName is already present
-      const storedHostName = localStorage.getItem("musivo_host_name")
-      if (storedHostName) {
-        setHostName(storedHostName) // Set the host name if it was stored
-        // Call handleHostRoom after a short delay to allow state to update
+
+      if (returnedHostName) {
+        setHostName(returnedHostName)
+        // Automatically trigger room creation after a short delay
         setTimeout(() => {
           const newRoomCode = Math.random().toString(36).substring(2, 8).toUpperCase()
-          router.push(`/room/${newRoomCode}?host=true&name=${encodeURIComponent(storedHostName)}&spotify=true`)
-        }, 100) // Small delay to ensure isAuthenticated is updated
+          router.push(`/room/${newRoomCode}?host=true&name=${encodeURIComponent(returnedHostName)}&spotify=true`)
+        }, 100)
       }
+
       // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname)
     }
-  }, [toast, router, isAuthenticated])
+  }, [toast, router, isAuthenticated, clearTokens])
 
   const handleHostRoom = () => {
     if (hostName.trim()) {
-      // Store host name before redirecting to Spotify
-      localStorage.setItem("musivo_host_name", hostName.trim())
       if (!isAuthenticated) {
         try {
-          // Redirect to Spotify auth
-          window.location.href = getSpotifyAuthUrl()
+          // Redirect to Spotify auth, passing hostName in state
+          window.location.href = getSpotifyAuthUrl(hostName.trim())
         } catch (error) {
           toast({
             title: "Setup Required",

@@ -15,6 +15,7 @@ export default function SpotifySuccessPage() {
     const accessToken = searchParams.get("access_token")
     const refreshToken = searchParams.get("refresh_token")
     const expiresIn = searchParams.get("expires_in")
+    const hostName = searchParams.get("host_name")
 
     if (accessToken && refreshToken && expiresIn) {
       // Save tokens using the hook
@@ -24,21 +25,21 @@ export default function SpotifySuccessPage() {
         expires_in: Number.parseInt(expiresIn),
       })
 
-      // Use window.location for more reliable production redirect
-      setTimeout(() => {
-        // Try router.push first, fallback to window.location
-        try {
-          router.push("/?spotify_connected=true")
-        } catch (error) {
-          console.error("Router push failed, using window.location:", error)
-          window.location.href = "/?spotify_connected=true"
-        }
-        
-        // Backup redirect after additional delay
-        setTimeout(() => {
-          window.location.href = "/?spotify_connected=true"
-        }, 1000)
-      }, 2000)
+      // Construct the redirect URL for the create room page
+      const redirectPath = "/host/create"
+      const newUrl = new URL(redirectPath, window.location.origin)
+      newUrl.searchParams.set("spotify_connected", "true")
+      if (hostName) {
+        newUrl.searchParams.set("host_name", hostName)
+      }
+
+      // Redirect immediately
+      try {
+        router.push(newUrl.toString())
+      } catch (error) {
+        console.error("Router push failed, using window.location:", error)
+        window.location.href = newUrl.toString()
+      }
     } else {
       // Use window.location for error redirect too
       window.location.href = "/?error=missing_tokens"

@@ -1,9 +1,5 @@
 const SPOTIFY_CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID!
 
-if (!SPOTIFY_CLIENT_ID) {
-  throw new Error("SPOTIFY_CLIENT_ID is not configured")
-}
-
 export interface SpotifyTrack {
   id: string
   name: string
@@ -23,7 +19,7 @@ export interface SpotifySearchResponse {
 }
 
 // Generate Spotify auth URL (works with both localhost and production)
-export function getSpotifyAuthUrl(): string {
+export function getSpotifyAuthUrl(hostName: string): string {
   const scopes = [
     "streaming",
     "user-read-email",
@@ -36,12 +32,14 @@ export function getSpotifyAuthUrl(): string {
   // Use the current origin for redirect URI
   const redirectUri = `${window.location.origin}/api/auth/spotify/callback`
 
+  const state = `${Math.random().toString(36).substring(7)}_${encodeURIComponent(hostName)}`
+
   const params = new URLSearchParams({
     response_type: "code",
     client_id: SPOTIFY_CLIENT_ID,
     scope: scopes,
     redirect_uri: redirectUri,
-    state: Math.random().toString(36).substring(7),
+    state: state,
   })
 
   return `https://accounts.spotify.com/authorize?${params.toString()}`

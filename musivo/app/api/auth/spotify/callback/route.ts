@@ -27,6 +27,19 @@ export async function GET(request: NextRequest) {
   const error = searchParams.get("error")
   const state = searchParams.get("state")
 
+  // Extract hostName from state parameter
+  let hostName: string | null = null
+  if (state) {
+    const stateParts = state.split("_")
+    if (stateParts.length > 1) {
+      try {
+        hostName = decodeURIComponent(stateParts.slice(1).join("_"))
+      } catch (e) {
+        console.error("Failed to decode hostName from state:", e)
+      }
+    }
+  }
+
   // Debug headers
   console.log("🔍 Headers:")
   console.log("  - host:", request.headers.get("host"))
@@ -78,6 +91,9 @@ export async function GET(request: NextRequest) {
     redirectUrl.searchParams.set("access_token", tokenData.access_token)
     redirectUrl.searchParams.set("refresh_token", tokenData.refresh_token)
     redirectUrl.searchParams.set("expires_in", tokenData.expires_in.toString())
+    if (hostName) {
+      redirectUrl.searchParams.set("host_name", hostName)
+    }
 
     console.log("🔍 Final redirect URL:", redirectUrl.toString())
 
