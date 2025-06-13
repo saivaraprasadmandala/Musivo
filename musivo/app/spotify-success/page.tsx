@@ -61,7 +61,7 @@ export default function SpotifySuccessPage() {
           </p>
           <Loader2 className="h-6 w-6 animate-spin mx-auto" />
           <p className="text-xs text-gray-500 mt-2">
-            If you're not redirected automatically, <a href="/?spotify_connected=true" className="text-blue-500 underline">click here</a>
+            If you're not redirected automatically, <a href="/host/create?spotify_connected=true" className="text-blue-500 underline">click here</a>
           </p>
         </CardContent>
       </Card>
