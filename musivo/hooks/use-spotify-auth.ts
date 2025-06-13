@@ -15,7 +15,6 @@ export function useSpotifyAuth() {
   const { toast } = useToast()
 
   useEffect(() => {
-    // Load tokens from localStorage on mount
     const loadTokens = () => {
       const accessToken = localStorage.getItem("spotify_access_token")
       const refreshToken = localStorage.getItem("spotify_refresh_token")
@@ -34,26 +33,51 @@ export function useSpotifyAuth() {
     loadTokens()
   }, [])
 
-  const saveTokens = (tokenData: { access_token: string; refresh_token: string; expires_in: number }) => {
-    console.log("useSpotifyAuth: saveTokens called with tokenData:", tokenData)
-    const expiresAt = Date.now() + tokenData.expires_in * 1000
-    console.log("useSpotifyAuth: calculated expiresAt:", expiresAt)
-
+  const verifyTokensImmediately = async (tokenData: {
+    access_token: string
+    refresh_token: string
+    expires_in: number
+  }): Promise<boolean> => {
     try {
+      localStorage.removeItem("spotify_access_token")
+      localStorage.removeItem("spotify_refresh_token")
+      localStorage.removeItem("spotify_token_expiry")
+
+      const expiresAt = Date.now() + tokenData.expires_in * 1000
       localStorage.setItem("spotify_access_token", tokenData.access_token)
       localStorage.setItem("spotify_refresh_token", tokenData.refresh_token)
       localStorage.setItem("spotify_token_expiry", expiresAt.toString())
-      console.log("useSpotifyAuth: Tokens saved to localStorage.")
-    } catch (e) {
-      console.error("useSpotifyAuth: Error saving tokens to localStorage:", e)
-    }
 
-    setTokens({
-      access_token: tokenData.access_token,
-      refresh_token: tokenData.refresh_token,
-      expires_at: expiresAt,
-    })
-    console.log("useSpotifyAuth: setTokens called.")
+      const verified = 
+        localStorage.getItem("spotify_access_token") === tokenData.access_token &&
+        localStorage.getItem("spotify_refresh_token") === tokenData.refresh_token
+
+      if (verified) {
+        setTokens({
+          access_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token,
+          expires_at: expiresAt,
+        })
+        return true
+      }
+      return false
+    } catch (e) {
+      console.error("Immediate token verification failed:", e)
+      return false
+    }
+  }
+
+  const saveTokens = async (tokenData: {
+    access_token: string
+    refresh_token: string
+    expires_in: number
+  }): Promise<boolean> => {
+    try {
+      return await verifyTokensImmediately(tokenData)
+    } catch (e) {
+      console.error("Failed to save tokens:", e)
+      return false
+    }
   }
 
   const refreshTokens = async () => {
@@ -64,18 +88,13 @@ export function useSpotifyAuth() {
     try {
       const response = await fetch("/api/spotify/token", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          refresh_token: tokens.refresh_token,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: tokens.refresh_token }),
       })
 
       if (!response.ok) {
         const data = await response.json()
         if (data.error === "invalid_grant") {
-          // Clear invalid tokens
           clearTokens()
           throw new Error("Invalid refresh token")
         }
@@ -83,7 +102,7 @@ export function useSpotifyAuth() {
       }
 
       const data = await response.json()
-      saveTokens(data)
+      await saveTokens(data)
       return data.access_token
     } catch (error) {
       console.error("Token refresh failed:", error)
@@ -95,30 +114,19 @@ export function useSpotifyAuth() {
   const getValidAccessToken = async (): Promise<string | null> => {
     if (!tokens) return null
 
-    // Check if token is expired (with 5 minute buffer)
     const isExpired = Date.now() > tokens.expires_at - 5 * 60 * 1000
-
     if (isExpired) {
       try {
         return await refreshTokens()
       } catch (error) {
-        if (error instanceof Error && error.message === "Invalid refresh token") {
-          toast({
-            title: "Authentication expired",
-            description: "Please reconnect to Spotify",
-            variant: "destructive",
-          })
-        } else {
-          toast({
-            title: "Authentication error",
-            description: "Please try reconnecting to Spotify",
-            variant: "destructive",
-          })
-        }
+        toast({
+          title: "Authentication error",
+          description: "Please reconnect to Spotify",
+          variant: "destructive",
+        })
         return null
       }
     }
-
     return tokens.access_token
   }
 
@@ -136,6 +144,7 @@ export function useSpotifyAuth() {
     isAuthenticated,
     isLoading,
     saveTokens,
+    verifyTokensImmediately,
     getValidAccessToken,
     clearTokens,
   }
