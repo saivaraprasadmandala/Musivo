@@ -33,6 +33,7 @@ import type { Song } from "@/lib/websocket";
 import { ConnectionStatus } from "@/components/connection-status";
 import { RoomStats } from "@/components/room-stats";
 import { SpotifyWebPlayer } from "@/components/spotify-web-player";
+import { ShareRoom } from "@/components/share-room";
 
 export default function RoomPage() {
   const params = useParams();
@@ -422,15 +423,8 @@ export default function RoomPage() {
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={copyRoomCode}
-              className="text-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-700"
-            >
-              <Copy className="h-4 w-4 mr-2" />
-              Copy Code
-            </Button>
+          <div className="flex items-center gap-4">
+            <ShareRoom roomId={roomId} />
             <Button variant="destructive" onClick={handleEndSession}>
               {isHost ? "End Session" : "Leave Session"}
             </Button>

@@ -14,12 +14,17 @@ export default function JoinRoomPage() {
   const [roomCode, setRoomCode] = useState("")
   const [joinName, setJoinName] = useState("")
   const { toast } = useToast()
+  
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const error = urlParams.get("error")
     const details = urlParams.get("details")
+    const roomParam = urlParams.get("room")
 
+    if (roomParam) {
+      setRoomCode(roomParam)
+    }
     if (error) {
       toast({
         title: "Error",
